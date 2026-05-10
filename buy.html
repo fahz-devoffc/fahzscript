@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fahz-Script | Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#08090d;--bg2:#0f1117;--card:#13161f;--border:rgba(99,179,237,0.12);--accent:#63b3ed;--accent2:#9f7aea;--text:#e8eaf0;--muted:#7a8499;--sidebar-w:260px;--glow:0 0 24px rgba(99,179,237,0.18);}
+    [data-theme="light"]{--bg:#f0f4ff;--bg2:#e4eaf8;--card:#ffffff;--border:rgba(99,130,237,0.18);--accent:#3a6fd8;--accent2:#7c5cbf;--text:#1a1e2e;--muted:#5a6480;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .4s,color .4s;}
+
+    .sidebar{position:fixed;top:0;left:-280px;width:var(--sidebar-w);height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:1000;display:flex;flex-direction:column;padding:28px 0 24px;transition:left .38s cubic-bezier(.77,0,.175,1);}
+    .sidebar.open{left:0;box-shadow:4px 0 40px rgba(0,0,0,0.45);}
+    .sidebar-logo{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:900;color:var(--accent);letter-spacing:2px;padding:0 28px 28px;border-bottom:1px solid var(--border);}
+    .sidebar-logo span{color:var(--accent2);}
+    .sidebar-nav{flex:1;padding:24px 16px;display:flex;flex-direction:column;gap:6px;}
+    .nav-tab{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;cursor:pointer;text-decoration:none;color:var(--muted);font-weight:600;font-size:.95rem;transition:all .22s;position:relative;overflow:hidden;}
+    .nav-tab::before{content:'';position:absolute;inset:0;background:var(--accent);opacity:0;border-radius:10px;transition:opacity .22s;}
+    .nav-tab:hover,.nav-tab.active{color:var(--text);}
+    .nav-tab:hover::before{opacity:.07;}
+    .nav-tab.active::before{opacity:.12;}
+    .nav-tab.active{color:var(--accent);}
+    .nav-tab svg{width:20px;height:20px;flex-shrink:0;position:relative;z-index:1;}
+    .nav-tab span{position:relative;z-index:1;}
+    .sidebar-footer{padding:18px 28px 0;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;opacity:0;pointer-events:none;transition:opacity .35s;}
+    .overlay.show{opacity:1;pointer-events:all;}
+    .topbar{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:900;background:rgba(8,9,13,0.82);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);transition:background .4s;}
+    [data-theme="light"] .topbar{background:rgba(240,244,255,0.88);}
+    .hamburger{width:38px;height:38px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;}
+    .hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;transition:all .3s;}
+    .hamburger.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+    .hamburger.active span:nth-child(2){opacity:0;transform:scaleX(0);}
+    .hamburger.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+    .topbar-title{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;color:var(--accent);letter-spacing:2px;}
+    .theme-toggle{width:38px;height:38px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text);font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+
+    /* MAIN */
+    .main{padding-top:60px;min-height:100vh;}
+    .page-header{padding:60px 24px 32px;text-align:center;}
+    .page-badge{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent2);background:rgba(159,122,234,0.1);border:1px solid rgba(159,122,234,0.25);border-radius:20px;padding:6px 16px;letter-spacing:2px;display:inline-block;margin-bottom:20px;animation:fadeUp .7s ease both;}
+    .page-title{font-family:'Orbitron',monospace;font-size:clamp(2rem,5vw,3.4rem);font-weight:900;animation:fadeUp .7s .1s ease both;}
+    .page-title span{background:linear-gradient(135deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .page-desc{max-width:580px;margin:18px auto 0;color:var(--muted);line-height:1.8;font-size:.96rem;animation:fadeUp .7s .2s ease both;}
+
+    /* PRICING CARDS */
+    .pricing-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:28px 24px 0;max-width:900px;margin:0 auto;}
+    .price-card{flex:1;min-width:150px;max-width:190px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 16px;text-align:center;transition:transform .22s,border-color .22s;}
+    .price-card:hover,.price-card.selected{transform:translateY(-4px);border-color:var(--accent2);box-shadow:0 0 20px rgba(159,122,234,0.2);}
+    .price-card.selected{background:rgba(159,122,234,0.07);}
+    .price-dur{font-family:'Orbitron',monospace;font-size:.78rem;color:var(--muted);letter-spacing:1px;margin-bottom:8px;}
+    .price-num{font-family:'Orbitron',monospace;font-size:1.35rem;font-weight:900;color:var(--accent);}
+    .price-num small{font-size:.65rem;color:var(--muted);}
+
+    /* FORM */
+    .form-wrap{max-width:580px;margin:36px auto 0;padding:0 24px 60px;}
+    .form-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;}
+    .form-title{font-family:'Orbitron',monospace;font-size:1.05rem;font-weight:700;color:var(--accent);margin-bottom:24px;letter-spacing:1px;}
+    .form-group{margin-bottom:18px;}
+    label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-bottom:7px;text-transform:uppercase;}
+    input, select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s;}
+    input:focus, select:focus{border-color:var(--accent);}
+    input::placeholder{color:var(--muted);}
+    select option{background:var(--bg2);}
+
+    .promo-row{display:flex;gap:10px;}
+    .promo-row input{flex:1;}
+    .promo-btn{padding:12px 18px;background:rgba(99,179,237,0.1);border:1px solid var(--border);border-radius:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.78rem;cursor:pointer;white-space:nowrap;transition:all .2s;}
+    .promo-btn:hover{background:rgba(99,179,237,0.18);border-color:var(--accent);}
+    .promo-feedback{margin-top:8px;font-size:.78rem;font-family:'JetBrains Mono',monospace;min-height:18px;}
+    .promo-ok{color:#22c55e;}
+    .promo-err{color:#ef4444;}
+
+    .price-summary{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;margin:8px 0 24px;}
+    .price-row{display:flex;justify-content:space-between;align-items:center;font-size:.88rem;color:var(--muted);margin-bottom:8px;}
+    .price-row:last-child{border-top:1px solid var(--border);padding-top:12px;margin:0;}
+    .price-total{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:900;color:var(--accent);}
+    .price-disc{color:#22c55e;font-weight:700;}
+
+    .submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:12px;color:#fff;font-family:'Orbitron',monospace;font-size:.95rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .2s,transform .2s;}
+    .submit-btn:hover{opacity:.9;transform:translateY(-2px);}
+    .submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+    /* SUCCESS MODAL */
+    .success-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(6px);}
+    .success-bg.show{opacity:1;pointer-events:all;}
+    .success-box{background:var(--bg2);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:40px 32px;text-align:center;max-width:400px;transform:scale(.92);transition:transform .3s;}
+    .success-bg.show .success-box{transform:scale(1);}
+    .success-icon{font-size:3rem;margin-bottom:16px;}
+    .success-title{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;color:#22c55e;margin-bottom:12px;}
+    .success-msg{color:var(--muted);font-size:.9rem;line-height:1.7;}
+    .success-close{margin-top:24px;padding:12px 28px;background:#22c55e;border:none;border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:.85rem;cursor:pointer;}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    footer{text-align:center;padding:28px 24px;border-top:1px solid var(--border);color:var(--muted);font-size:.8rem;font-family:'JetBrains Mono',monospace;background:var(--bg2);}
+    footer span{color:var(--accent);}
+  </style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">FAHZ<span>-SCRIPT</span></div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.75L12 3l9 6.75V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.75z"/><path d="M9 22V12h6v10"/></svg><span>Main</span></a>
+    <a href="kumpulan.html" class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Script</span></a>
+    <a href="buy.html" class="nav-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span>Shop</span></a>
+  </nav>
+  <div class="sidebar-footer">© 2026 BRC7 Company</div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+  <div class="topbar-title">FAHZ-SCRIPT</div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">☀️</span></button>
+</header>
+
+<main class="main">
+  <div class="page-header">
+    <div class="page-badge">// PREMIUM ACCESS</div>
+    <h1 class="page-title">Beli <span>Key Premium</span></h1>
+    <p class="page-desc">Dapatkan akses penuh ke semua script premium eksklusif dari FahzDev. Key Premium membuka semua fitur tanpa batas — sekali bayar, langsung aktif. Harga terjangkau untuk pengalaman scripting terbaik.</p>
+  </div>
+
+  <!-- PRICING PREVIEW -->
+  <div class="pricing-row">
+    <div class="price-card" data-dur="7hari" data-price="15000" onclick="selectPlan(this,'7 Hari','15000')">
+      <div class="price-dur">7 HARI</div>
+      <div class="price-num">15K<small>/paket</small></div>
+    </div>
+    <div class="price-card" data-dur="1bulan" data-price="30000" onclick="selectPlan(this,'1 Bulan','30000')">
+      <div class="price-dur">1 BULAN</div>
+      <div class="price-num">30K<small>/paket</small></div>
+    </div>
+    <div class="price-card" data-dur="5bulan" data-price="60000" onclick="selectPlan(this,'5 Bulan','60000')">
+      <div class="price-dur">5 BULAN</div>
+      <div class="price-num">60K<small>/paket</small></div>
+    </div>
+    <div class="price-card" data-dur="1tahun" data-price="90000" onclick="selectPlan(this,'1 Tahun','90000')">
+      <div class="price-dur">1 TAHUN</div>
+      <div class="price-num">90K<small>/paket</small></div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-wrap">
+    <div class="form-card">
+      <div class="form-title">// FORM PEMBELIAN</div>
+
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" id="fNama" placeholder="Masukkan nama kamu"/>
+      </div>
+      <div class="form-group">
+        <label>Username Roblox</label>
+        <input type="text" id="fRoblox" placeholder="Username Roblox kamu"/>
+      </div>
+      <div class="form-group">
+        <label>Nomor WhatsApp</label>
+        <input type="tel" id="fWa" placeholder="08xxxxxxxxxx"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="email@kamu.com"/>
+      </div>
+      <div class="form-group">
+        <label>Produk</label>
+        <input type="text" value="Key Premium" readonly style="opacity:.7;cursor:default;"/>
+      </div>
+      <div class="form-group">
+        <label>Lifetime / Durasi</label>
+        <select id="fDur" onchange="onDurChange()">
+          <option value="">-- Pilih Durasi --</option>
+          <option value="7 Hari|15000">7 Hari — Rp 15.000</option>
+          <option value="1 Bulan|30000">1 Bulan — Rp 30.000</option>
+          <option value="5 Bulan|60000">5 Bulan — Rp 60.000</option>
+          <option value="1 Tahun|90000">1 Tahun — Rp 90.000</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kode Promo</label>
+        <div class="promo-row">
+          <input type="text" id="fPromo" placeholder="Masukkan kode promo aktif"/>
+          <button class="promo-btn" onclick="checkPromo()">Terapkan</button>
+        </div>
+        <div class="promo-feedback" id="promoFeedback"></div>
+      </div>
+
+      <!-- PRICE SUMMARY -->
+      <div class="price-summary">
+        <div class="price-row"><span>Harga Paket</span><span id="basePrice">Rp —</span></div>
+        <div class="price-row"><span>Diskon Promo</span><span id="discAmount" class="price-disc">— %</span></div>
+        <div class="price-row"><span style="font-weight:700;color:var(--text)">Total</span><span class="price-total" id="totalPrice">Rp —</span></div>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" onclick="submitOrder()">PESAN SEKARANG →</button>
+    </div>
+  </div>
+</main>
+
+<!-- SUCCESS MODAL -->
+<div class="success-bg" id="successBg">
+  <div class="success-box">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">PESANAN TERKIRIM!</div>
+    <p class="success-msg">Pesanan kamu sudah kami terima. Tim kami akan menghubungi kamu via WhatsApp dalam waktu 1x24 jam. Terima kasih telah mempercayai Fahz-Script!</p>
+    <button class="success-close" onclick="document.getElementById('successBg').classList.remove('show')">TUTUP</button>
+  </div>
+</div>
+
+<footer>Script Collection By <span>BRC7 Company</span> | Fahz. All Rights Reserved 2026</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyAgvMarhb2H4nY0YORrtSUtwSjP9mN9aJk",
+    authDomain:"realbro-f988a.firebaseapp.com",
+    databaseURL:"https://realbro-f988a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:"realbro-f988a",
+    storageBucket:"realbro-f988a.firebasestorage.app",
+    messagingSenderId:"302026488099",
+    appId:"1:302026488099:web:d880c86ca7d132bc23f496",
+    measurementId:"G-FB0D4SF8H2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db = db;
+  window._ref = ref;
+  window._get = get;
+  window._push = push;
+  window._serverTimestamp = serverTimestamp;
+</script>
+
+<script>
+  let basePrice = 0, discPct = 0, promoValid = false, promoCode = '';
+
+  function selectPlan(el, label, price) {
+    document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const sel = document.getElementById('fDur');
+    for (let o of sel.options) {
+      if (o.value.startsWith(label)) { sel.value = o.value; break; }
+    }
+    onDurChange();
+  }
+
+  function onDurChange() {
+    const val = document.getElementById('fDur').value;
+    if (!val) { basePrice = 0; updateSummary(); return; }
+    basePrice = parseInt(val.split('|')[1]);
+    document.querySelectorAll('.price-card').forEach(c => {
+      c.classList.toggle('selected', c.dataset.price === String(basePrice));
+    });
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const disc = promoValid ? Math.round(basePrice * discPct / 100) : 0;
+    const total = basePrice - disc;
+    document.getElementById('basePrice').textContent = basePrice ? 'Rp ' + basePrice.toLocaleString('id-ID') : 'Rp —';
+    document.getElementById('discAmount').textContent = promoValid ? `- Rp ${disc.toLocaleString('id-ID')} (${discPct}%)` : '—';
+    document.getElementById('totalPrice').textContent = basePrice ? 'Rp ' + total.toLocaleString('id-ID') : 'Rp —';
+  }
+
+  async function checkPromo() {
+    const code = document.getElementById('fPromo').value.trim().toUpperCase();
+    const fb = document.getElementById('promoFeedback');
+    if (!code) { fb.innerHTML = '<span class="promo-err">Masukkan kode promo dulu.</span>'; return; }
+    fb.textContent = 'Mengecek kode...';
+    try {
+      const snap = await window._get(window._ref(window._db, `promos/${code}`));
+      if (!snap.exists()) { fb.innerHTML = '<span class="promo-err">Kode promo tidak ditemukan.</span>'; promoValid=false; discPct=0; updateSummary(); return; }
+      const data = snap.val();
+      const now = Date.now();
+      if (data.expiry && now > data.expiry) { fb.innerHTML = '<span class="promo-err">Kode promo sudah kedaluwarsa.</span>'; promoValid=false; discPct=0; updateSummary(); return; }
+      if (!data.active) { fb.innerHTML = '<span class="promo-err">Kode promo tidak aktif.</span>'; promoValid=false; discPct=0; updateSummary(); return; }
+      promoValid = true; discPct = data.discount || 10; promoCode = code;
+      fb.innerHTML = `<span class="promo-ok">✓ Kode valid! Diskon ${discPct}% diterapkan.</span>`;
+      updateSummary();
+    } catch(e) {
+      fb.innerHTML = '<span class="promo-err">Gagal memverifikasi kode.</span>';
+    }
+  }
+
+  async function submitOrder() {
+    const nama = document.getElementById('fNama').value.trim();
+    const roblox = document.getElementById('fRoblox').value.trim();
+    const wa = document.getElementById('fWa').value.trim();
+    const email = document.getElementById('fEmail').value.trim();
+    const durVal = document.getElementById('fDur').value;
+    if (!nama||!roblox||!wa||!email||!durVal) { alert('Lengkapi semua field terlebih dahulu!'); return; }
+
+    const dur = durVal.split('|')[0];
+    const disc = promoValid ? Math.round(basePrice * discPct / 100) : 0;
+    const total = basePrice - disc;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Mengirim...';
+
+    try {
+      await window._push(window._ref(window._db, 'orders'), {
+        nama, roblox, wa, email,
+        produk: 'Key Premium', durasi: dur,
+        hargaBase: basePrice, diskon: disc, total,
+        promo: promoCode || null,
+        status: 'pending',
+        timestamp: window._serverTimestamp()
+      });
+      document.getElementById('successBg').classList.add('show');
+      // reset
+      ['fNama','fRoblox','fWa','fEmail','fPromo'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('fDur').value='';
+      basePrice=0; promoValid=false; discPct=0; promoCode='';
+      document.getElementById('promoFeedback').textContent='';
+      document.querySelectorAll('.price-card').forEach(c=>c.classList.remove('selected'));
+      updateSummary();
+    } catch(e) {
+      alert('Gagal mengirim pesanan. Coba lagi.');
+    }
+    btn.disabled=false; btn.textContent='PESAN SEKARANG →';
+  }
+
+  function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('hamburger').classList.toggle('active');document.getElementById('overlay').classList.toggle('show');}
+  function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('hamburger').classList.remove('active');document.getElementById('overlay').classList.remove('show');}
+  function toggleTheme(){const h=document.documentElement;const d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');document.getElementById('themeIcon').textContent=d?'🌙':'☀️';localStorage.setItem('theme',d?'light':'dark');}
+  (function(){const s=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',s);document.getElementById('themeIcon').textContent=s==='dark'?'☀️':'🌙';})();
+</script>
+</body>
+</html>

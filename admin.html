@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fahz-Script | Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#08090d;--bg2:#0f1117;--card:#13161f;--border:rgba(99,179,237,0.12);--accent:#63b3ed;--accent2:#9f7aea;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--text:#e8eaf0;--muted:#7a8499;--sidebar-w:240px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+    /* ─── AUTH GATE ─── */
+    .auth-gate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .auth-gate.hidden{display:none;}
+    .auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:44px 36px;text-align:center;max-width:380px;width:100%;}
+    .auth-logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;color:var(--accent);letter-spacing:3px;margin-bottom:8px;text-shadow:0 0 20px rgba(99,179,237,0.4);}
+    .auth-logo span{color:var(--accent2);}
+    .auth-sub{color:var(--muted);font-size:.82rem;font-family:'JetBrains Mono',monospace;margin-bottom:32px;}
+    .auth-box label{display:block;text-align:left;font-size:.75rem;font-weight:600;color:var(--muted);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;}
+    .auth-input-wrap{position:relative;}
+    .auth-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 44px 13px 16px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.9rem;outline:none;transition:border-color .2s;}
+    .auth-input:focus{border-color:var(--accent);}
+    .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;}
+    .auth-err{color:var(--red);font-size:.78rem;font-family:'JetBrains Mono',monospace;margin-top:10px;min-height:20px;text-align:left;}
+    .auth-btn{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:12px;color:#fff;font-family:'Orbitron',monospace;font-size:.9rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity .2s;}
+    .auth-btn:hover{opacity:.88;}
+    .auth-hint{margin-top:16px;font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+    /* ─── LAYOUT ─── */
+    .admin-layout{display:flex;min-height:100vh;}
+    .admin-sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;padding:0 0 24px;z-index:100;}
+    .admin-logo{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;color:var(--accent);letter-spacing:2px;padding:24px 24px 22px;border-bottom:1px solid var(--border);}
+    .admin-logo small{display:block;font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-top:3px;font-family:'JetBrains Mono',monospace;}
+    .admin-logo span{color:var(--accent2);}
+    .admin-nav{flex:1;padding:20px 14px;display:flex;flex-direction:column;gap:4px;}
+    .admin-tab{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:600;font-size:.88rem;transition:all .22s;border:none;background:none;width:100%;text-align:left;position:relative;}
+    .admin-tab::before{content:'';position:absolute;inset:0;background:var(--accent);opacity:0;border-radius:10px;transition:opacity .2s;}
+    .admin-tab:hover,.admin-tab.active{color:var(--text);}
+    .admin-tab:hover::before{opacity:.07;}
+    .admin-tab.active::before{opacity:.13;}
+    .admin-tab.active{color:var(--accent);}
+    .admin-tab svg{width:18px;height:18px;flex-shrink:0;position:relative;z-index:1;}
+    .admin-tab span{position:relative;z-index:1;}
+    .admin-tab .badge{position:relative;z-index:1;background:var(--red);color:#fff;border-radius:10px;font-size:.62rem;padding:2px 7px;font-family:'JetBrains Mono',monospace;margin-left:auto;}
+    .admin-footer{padding:14px 24px 0;border-top:1px solid var(--border);font-size:.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+    .logout-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;margin:0 14px;border-radius:10px;cursor:pointer;color:var(--red);font-weight:600;font-size:.82rem;background:none;border:1px solid rgba(239,68,68,0.2);width:calc(100% - 28px);transition:all .2s;margin-top:8px;}
+    .logout-btn:hover{background:rgba(239,68,68,0.08);}
+
+    /* ─── CONTENT AREA ─── */
+    .admin-content{margin-left:var(--sidebar-w);flex:1;padding:32px 36px;min-height:100vh;}
+    .panel{display:none;}
+    .panel.active{display:block;}
+    .panel-title{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:6px;}
+    .panel-sub{color:var(--muted);font-size:.85rem;margin-bottom:28px;}
+
+    /* ─── CARDS & INPUTS ─── */
+    .section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;}
+    .section-title{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);letter-spacing:2px;margin-bottom:18px;text-transform:uppercase;}
+    .form-group{margin-bottom:18px;}
+    .form-group label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
+    .form-group input,.form-group textarea,.form-group select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent);}
+    .form-group textarea{resize:vertical;min-height:100px;font-family:'JetBrains Mono',monospace;font-size:.82rem;}
+    .form-group input[type=text].script-area{font-family:'JetBrains Mono',monospace;font-size:.8rem;}
+
+    .btn{padding:11px 22px;border:none;border-radius:10px;font-family:'Orbitron',monospace;font-size:.78rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+    .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;}
+    .btn-primary:hover{opacity:.88;transform:translateY(-1px);}
+    .btn-green{background:var(--green);color:#fff;}
+    .btn-green:hover{opacity:.88;}
+    .btn-red{background:none;border:1px solid rgba(239,68,68,0.35);color:var(--red);font-size:.72rem;padding:7px 14px;}
+    .btn-red:hover{background:rgba(239,68,68,0.1);}
+    .btn-sm{padding:7px 14px;font-size:.7rem;}
+    .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+    /* ─── MANAGE MAIN ─── */
+    .preview-box{background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:18px;margin-top:10px;font-size:.9rem;line-height:1.8;color:var(--muted);min-height:80px;}
+
+    /* ─── MANAGE COLLECTION ─── */
+    .upload-form{margin-bottom:30px;}
+    .scripts-list{display:flex;flex-direction:column;gap:14px;margin-top:24px;}
+    .script-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px;}
+    .script-item-img{width:60px;height:50px;border-radius:8px;object-fit:cover;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:rgba(99,179,237,0.3);}
+    .script-item-img img{width:100%;height:100%;border-radius:8px;object-fit:cover;}
+    .script-item-info{flex:1;}
+    .script-item-title{font-family:'Orbitron',monospace;font-size:.88rem;font-weight:700;margin-bottom:4px;}
+    .script-item-desc{font-size:.78rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+    .script-item-actions{display:flex;gap:8px;flex-shrink:0;}
+
+    /* ─── PROMO ─── */
+    .promo-list{display:flex;flex-direction:column;gap:12px;margin-top:20px;}
+    .promo-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px;}
+    .promo-code{font-family:'Orbitron',monospace;font-size:.92rem;font-weight:900;color:var(--accent);flex:0 0 auto;}
+    .promo-meta{flex:1;font-size:.78rem;color:var(--muted);}
+    .promo-status{padding:4px 12px;border-radius:20px;font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:1px;}
+    .status-active{background:rgba(34,197,94,.15);color:var(--green);}
+    .status-inactive{background:rgba(239,68,68,.12);color:var(--red);}
+    .status-expired{background:rgba(245,158,11,.12);color:var(--yellow);}
+
+    /* ─── ORDERS ─── */
+    .orders-list{display:flex;flex-direction:column;gap:16px;margin-top:0;}
+    .order-card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px;transition:border-color .2s;}
+    .order-card:hover{border-color:rgba(99,179,237,0.3);}
+    .order-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+    .order-id{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);}
+    .order-status{padding:5px 14px;border-radius:20px;font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:1px;}
+    .st-pending{background:rgba(245,158,11,.15);color:var(--yellow);}
+    .st-done{background:rgba(34,197,94,.15);color:var(--green);}
+    .st-cancel{background:rgba(239,68,68,.12);color:var(--red);}
+    .order-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+    .order-field{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
+    .order-field-label{font-size:.63rem;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+    .order-field-val{font-size:.88rem;font-weight:600;word-break:break-all;}
+    .order-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+    .btn-done{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+    .btn-done:hover{background:rgba(34,197,94,.25);}
+    .btn-cancel{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+    .btn-cancel:hover{background:rgba(239,68,68,.2);}
+
+    /* EMPTY / LOADING */
+    .empty{text-align:center;padding:48px;color:var(--muted);font-size:.9rem;}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .toast{position:fixed;bottom:28px;right:28px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 22px;font-size:.85rem;font-family:'JetBrains Mono',monospace;z-index:5000;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+    .toast.show{transform:translateY(0);opacity:1;}
+    .toast.ok{border-color:rgba(34,197,94,.4);color:var(--green);}
+    .toast.err{border-color:rgba(239,68,68,.3);color:var(--red);}
+    .divider{border:none;border-top:1px solid var(--border);margin:24px 0;}
+    @media(max-width:700px){.admin-sidebar{width:100%;height:auto;position:relative;flex-direction:row;flex-wrap:wrap;padding:12px;}.admin-content{margin-left:0;padding:20px 16px;}}
+  </style>
+</head>
+<body>
+
+<!-- ─── AUTH GATE ─── -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-box">
+    <div class="auth-logo">FAHZ<span>-SCRIPT</span></div>
+    <div class="auth-sub">// ADMIN PANEL ACCESS</div>
+    <label for="tokenInput">Token Admin</label>
+    <div class="auth-input-wrap">
+      <input class="auth-input" type="password" id="tokenInput" placeholder="Masukkan token rahasia..." onkeydown="if(event.key==='Enter')doAuth()"/>
+      <button class="eye-btn" onclick="toggleEye()" id="eyeBtn">👁</button>
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <button class="auth-btn" onclick="doAuth()">MASUK →</button>
+    <div class="auth-hint">Hanya untuk administrator Fahz-Script.</div>
+  </div>
+</div>
+
+<!-- ─── ADMIN LAYOUT ─── -->
+<div class="admin-layout" id="adminLayout" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="admin-logo">FAHZ<span>-SCRIPT</span><small>// ADMIN PANEL</small></div>
+    <nav class="admin-nav">
+      <button class="admin-tab active" onclick="switchTab('main',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.75L12 3l9 6.75V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.75z"/><path d="M9 22V12h6v10"/></svg>
+        <span>Manage Main</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('collection',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        <span>Manage Collection</span>
+      </button>
+      <button class="admin-tab" id="orderTabBtn" onclick="switchTab('orders',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span>Manage Order</span>
+        <span class="badge" id="pendingBadge" style="display:none">0</span>
+      </button>
+    </nav>
+    <button class="logout-btn" onclick="doLogout()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+    <div class="admin-footer">© 2026 BRC7 Company | FahzDev</div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="admin-content">
+
+    <!-- ─── PANEL: MANAGE MAIN ─── -->
+    <div class="panel active" id="panel-main">
+      <div class="panel-title">Manage Main</div>
+      <div class="panel-sub">Edit konten halaman utama (index.html) secara realtime.</div>
+
+      <div class="section-card">
+        <div class="section-title">// Deskripsi Hero</div>
+        <div class="form-group">
+          <label>Teks Deskripsi</label>
+          <textarea id="heroDescInput" rows="5" placeholder="Tulis deskripsi hero di sini. Bisa pakai tag HTML seperti &lt;strong&gt;..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Preview</label>
+          <div class="preview-box" id="heroPreview">Preview akan muncul di sini...</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveHeroDesc()">💾 Simpan & Publish</button>
+      </div>
+    </div>
+
+    <!-- ─── PANEL: MANAGE COLLECTION ─── -->
+    <div class="panel" id="panel-collection">
+      <div class="panel-title">Manage Collection</div>
+      <div class="panel-sub">Upload script baru dan kelola koleksi yang sudah ada.</div>
+
+      <div class="section-card upload-form">
+        <div class="section-title">// Upload Script Baru</div>
+        <div class="form-group">
+          <label>URL Foto Script</label>
+          <input type="text" id="sImgUrl" placeholder="https://i.imgur.com/xxx.jpg" oninput="previewImg()"/>
+        </div>
+        <img id="imgPreview" src="" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-bottom:14px;display:none;"/>
+        <div class="form-group">
+          <label>Judul Script</label>
+          <input type="text" id="sTitle" placeholder="Contoh: Ultimate Aimbot v3"/>
+        </div>
+        <div class="form-group">
+          <label>Deskripsi</label>
+          <textarea id="sDesc" placeholder="Deskripsi lengkap script ini..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Script (untuk disalin)</label>
+          <textarea id="sScript" class="script-area" placeholder='loadstring(game:HttpGet("https://..."))()'></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="uploadScript()">🚀 Upload Script</button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">// Script Tersimpan</div>
+        <div id="scriptsList"><div class="empty"><div class="spinner"></div>Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- ─── PANEL: MANAGE ORDER ─── -->
+    <div class="panel" id="panel-orders">
+      <div class="panel-title">Manage Order</div>
+      <div class="panel-sub">Buat kode promo dan pantau semua pesanan yang masuk.</div>
+
+      <!-- PROMO SECTION -->
+      <div class="section-card" style="margin-bottom:28px;">
+        <div class="section-title">// Buat Kode Promo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Kode Promo</label>
+            <input type="text" id="pCode" placeholder="FAHZ20" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Diskon (%)</label>
+            <input type="number" id="pDisc" placeholder="20" min="1" max="100"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Kedaluwarsa</label>
+            <input type="datetime-local" id="pExpiry"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;display:flex;align-items:flex-end;">
+            <button class="btn btn-green" style="width:100%;" onclick="createPromo()">📢 Publish Promo</button>
+          </div>
+        </div>
+        <hr class="divider"/>
+        <div class="section-title">// Kode Promo Aktif</div>
+        <div id="promoList"><div class="empty">Belum ada promo.</div></div>
+      </div>
+
+      <!-- ORDERS SECTION -->
+      <div class="section-card">
+        <div class="section-title">// Semua Pesanan</div>
+        <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary" onclick="filterOrders('all')" id="f-all">Semua</button>
+          <button class="btn btn-sm" style="background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3);" onclick="filterOrders('pending')" id="f-pending">Pending</button>
+          <button class="btn btn-sm btn-done" onclick="filterOrders('done')" id="f-done">Selesai</button>
+          <button class="btn btn-sm btn-cancel" onclick="filterOrders('cancel')" id="f-cancel">Dibatalkan</button>
+        </div>
+        <div id="ordersList"><div class="empty"><div class="spinner"></div>Memuat pesanan...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, push, update, remove, onValue, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyAgvMarhb2H4nY0YORrtSUtwSjP9mN9aJk",
+    authDomain:"realbro-f988a.firebaseapp.com",
+    databaseURL:"https://realbro-f988a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:"realbro-f988a",
+    storageBucket:"realbro-f988a.firebasestorage.app",
+    messagingSenderId:"302026488099",
+    appId:"1:302026488099:web:d880c86ca7d132bc23f496",
+    measurementId:"G-FB0D4SF8H2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window._fb = { db, ref, set, get, push, update, remove, onValue, serverTimestamp };
+
+  // ─── LOAD HERO DESC ───
+  onValue(ref(db,'site/heroDesc'), snap => {
+    if(snap.exists()){
+      document.getElementById('heroDescInput').value = snap.val();
+      document.getElementById('heroPreview').innerHTML = snap.val();
+    }
+  });
+
+  // ─── LOAD SCRIPTS ───
+  onValue(ref(db,'scripts'), snap => {
+    const container = document.getElementById('scriptsList');
+    if(!snap.exists()){ container.innerHTML='<div class="empty">Belum ada script. Upload script baru!</div>'; return; }
+    const items = [];
+    snap.forEach(c => items.push({id:c.key,...c.val()}));
+    items.reverse();
+    container.innerHTML = `<div class="scripts-list">${items.map(s=>`
+      <div class="script-item">
+        <div class="script-item-img">${s.imageUrl?`<img src="${s.imageUrl}" alt="" onerror="this.parentElement.innerHTML='⌨'">`:'⌨'}</div>
+        <div class="script-item-info">
+          <div class="script-item-title">${s.title}</div>
+          <div class="script-item-desc">${s.desc}</div>
+        </div>
+        <div class="script-item-actions">
+          <button class="btn btn-red btn-sm" onclick="deleteScript('${s.id}')">🗑 Hapus</button>
+        </div>
+      </div>`).join('')}</div>`;
+  });
+
+  // ─── LOAD PROMOS ───
+  onValue(ref(db,'promos'), snap => {
+    const container = document.getElementById('promoList');
+    if(!snap.exists()){ container.innerHTML='<div class="empty">Belum ada kode promo.</div>'; return; }
+    const now = Date.now();
+    const items = [];
+    snap.forEach(c => items.push({id:c.key,...c.val()}));
+    container.innerHTML = `<div class="promo-list">${items.map(p=>{
+      let statusClass = 'status-active', statusLabel = 'AKTIF';
+      if(p.expiry && now > p.expiry){ statusClass='status-expired'; statusLabel='EXPIRED'; }
+      else if(!p.active){ statusClass='status-inactive'; statusLabel='NONAKTIF'; }
+      const exp = p.expiry ? new Date(p.expiry).toLocaleString('id-ID') : 'Tidak ada batas';
+      return `<div class="promo-item">
+        <div class="promo-code">${p.id}</div>
+        <div class="promo-meta">Diskon ${p.discount}% &nbsp;|&nbsp; Kedaluwarsa: ${exp}</div>
+        <span class="promo-status ${statusClass}">${statusLabel}</span>
+        <button class="btn btn-red btn-sm" onclick="deletePromo('${p.id}')">🗑</button>
+      </div>`;
+    }).join('')}</div>`;
+  });
+
+  // ─── LOAD ORDERS ───
+  let allOrders = [];
+  let currentFilter = 'all';
+  onValue(ref(db,'orders'), snap => {
+    allOrders = [];
+    if(snap.exists()) snap.forEach(c => allOrders.push({id:c.key,...c.val()}));
+    allOrders.reverse();
+    const pending = allOrders.filter(o=>o.status==='pending').length;
+    const badge = document.getElementById('pendingBadge');
+    if(pending > 0){ badge.style.display=''; badge.textContent=pending; }
+    else badge.style.display='none';
+    renderOrders();
+  });
+
+  function renderOrders(){
+    const container = document.getElementById('ordersList');
+    const filtered = currentFilter==='all' ? allOrders : allOrders.filter(o=>o.status===currentFilter);
+    if(!filtered.length){ container.innerHTML='<div class="empty">Tidak ada pesanan.</div>'; return; }
+    container.innerHTML = `<div class="orders-list">${filtered.map(o=>{
+      const stClass = o.status==='pending'?'st-pending':o.status==='done'?'st-done':'st-cancel';
+      const stLabel = o.status==='pending'?'PENDING':o.status==='done'?'SELESAI':'DIBATALKAN';
+      const ts = o.timestamp ? new Date(o.timestamp).toLocaleString('id-ID') : '—';
+      return `<div class="order-card">
+        <div class="order-header">
+          <div class="order-id">ID: ${o.id}</div>
+          <span class="order-status ${stClass}">${stLabel}</span>
+        </div>
+        <div class="order-grid">
+          <div class="order-field"><div class="order-field-label">Nama</div><div class="order-field-val">${o.nama||'—'}</div></div>
+          <div class="order-field"><div class="order-field-label">Roblox</div><div class="order-field-val">${o.roblox||'—'}</div></div>
+          <div class="order-field"><div class="order-field-label">WhatsApp</div><div class="order-field-val">${o.wa||'—'}</div></div>
+          <div class="order-field"><div class="order-field-label">Email</div><div class="order-field-val">${o.email||'—'}</div></div>
+          <div class="order-field"><div class="order-field-label">Produk</div><div class="order-field-val">${o.produk||'Key Premium'}</div></div>
+          <div class="order-field"><div class="order-field-label">Durasi</div><div class="order-field-val">${o.durasi||'—'}</div></div>
+          <div class="order-field"><div class="order-field-label">Total</div><div class="order-field-val" style="color:var(--accent)">Rp ${(o.total||0).toLocaleString('id-ID')}</div></div>
+          <div class="order-field"><div class="order-field-label">Promo</div><div class="order-field-val">${o.promo||'Tidak ada'}</div></div>
+          <div class="order-field" style="grid-column:1/-1"><div class="order-field-label">Waktu Pesan</div><div class="order-field-val">${ts}</div></div>
+        </div>
+        ${o.status==='pending'?`<div class="order-actions">
+          <button class="btn btn-sm btn-done" onclick="updateOrderStatus('${o.id}','done')">✓ Tandai Selesai</button>
+          <button class="btn btn-sm btn-cancel" onclick="updateOrderStatus('${o.id}','cancel')">✗ Batalkan</button>
+        </div>`:''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+  window.renderOrders = renderOrders;
+  window.filterOrders = (f) => { currentFilter=f; renderOrders(); };
+  window.updateOrderStatus = async (id,status) => {
+    await update(ref(db,`orders/${id}`),{status});
+    toast(`Pesanan ditandai: ${status}`,'ok');
+  };
+
+  // ─── ACTIONS ───
+  window.saveHeroDesc = async () => {
+    const val = document.getElementById('heroDescInput').value;
+    await set(ref(db,'site/heroDesc'), val);
+    document.getElementById('heroPreview').innerHTML = val;
+    toast('Deskripsi hero berhasil disimpan!','ok');
+  };
+
+  window.uploadScript = async () => {
+    const title = document.getElementById('sTitle').value.trim();
+    const desc = document.getElementById('sDesc').value.trim();
+    const script = document.getElementById('sScript').value.trim();
+    const imageUrl = document.getElementById('sImgUrl').value.trim();
+    if(!title||!desc||!script){ toast('Judul, deskripsi, dan script wajib diisi!','err'); return; }
+    await push(ref(db,'scripts'),{ title, desc, script, imageUrl: imageUrl||'', createdAt: serverTimestamp() });
+    ['sTitle','sDesc','sScript','sImgUrl'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('imgPreview').style.display='none';
+    toast('Script berhasil diupload!','ok');
+  };
+
+  window.deleteScript = async (id) => {
+    if(!confirm('Yakin hapus script ini?')) return;
+    await remove(ref(db,`scripts/${id}`));
+    toast('Script dihapus.','ok');
+  };
+
+  window.createPromo = async () => {
+    const code = document.getElementById('pCode').value.trim().toUpperCase();
+    const disc = parseInt(document.getElementById('pDisc').value);
+    const expiry = document.getElementById('pExpiry').value;
+    if(!code||!disc){ toast('Kode dan diskon wajib diisi!','err'); return; }
+    await set(ref(db,`promos/${code}`),{
+      discount: disc, active: true,
+      expiry: expiry ? new Date(expiry).getTime() : null,
+      createdAt: serverTimestamp()
+    });
+    ['pCode','pDisc','pExpiry'].forEach(id=>document.getElementById(id).value='');
+    toast(`Promo "${code}" berhasil dipublish!`,'ok');
+  };
+
+  window.deletePromo = async (id) => {
+    if(!confirm(`Hapus kode promo "${id}"?`)) return;
+    await remove(ref(db,`promos/${id}`));
+    toast('Promo dihapus.','ok');
+  };
+</script>
+
+<script>
+  const ADMIN_TOKEN = 'adminforfahz911';
+
+  function doAuth(){
+    const val = document.getElementById('tokenInput').value;
+    if(val === ADMIN_TOKEN){
+      document.getElementById('authGate').classList.add('hidden');
+      document.getElementById('adminLayout').style.display='flex';
+    } else {
+      document.getElementById('authErr').textContent='Token salah. Akses ditolak.';
+      document.getElementById('tokenInput').style.borderColor='var(--red)';
+      setTimeout(()=>{ document.getElementById('tokenInput').style.borderColor=''; },1500);
+    }
+  }
+
+  function doLogout(){
+    document.getElementById('authGate').classList.remove('hidden');
+    document.getElementById('adminLayout').style.display='none';
+    document.getElementById('tokenInput').value='';
+    document.getElementById('authErr').textContent='';
+  }
+
+  function toggleEye(){
+    const inp = document.getElementById('tokenInput');
+    inp.type = inp.type==='password' ? 'text' : 'password';
+    document.getElementById('eyeBtn').textContent = inp.type==='password' ? '👁' : '🙈';
+  }
+
+  function switchTab(name, el){
+    document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+name).classList.add('active');
+  }
+
+  // Hero preview live
+  const heroInput = document.getElementById('heroDescInput');
+  if(heroInput) heroInput.addEventListener('input', ()=>{
+    document.getElementById('heroPreview').innerHTML = heroInput.value;
+  });
+
+  function previewImg(){
+    const url = document.getElementById('sImgUrl').value.trim();
+    const img = document.getElementById('imgPreview');
+    if(url){ img.src=url; img.style.display='block'; img.onerror=()=>img.style.display='none'; }
+    else img.style.display='none';
+  }
+
+  function toast(msg, type='ok'){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + type;
+    setTimeout(()=>el.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>

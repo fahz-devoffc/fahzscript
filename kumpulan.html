@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fahz-Script | Our Collection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#08090d;--bg2:#0f1117;--card:#13161f;--border:rgba(99,179,237,0.12);
+      --accent:#63b3ed;--accent2:#9f7aea;--text:#e8eaf0;--muted:#7a8499;
+      --sidebar-w:260px;--glow:0 0 24px rgba(99,179,237,0.18);
+    }
+    [data-theme="light"]{--bg:#f0f4ff;--bg2:#e4eaf8;--card:#ffffff;--border:rgba(99,130,237,0.18);--accent:#3a6fd8;--accent2:#7c5cbf;--text:#1a1e2e;--muted:#5a6480;--glow:0 0 24px rgba(99,130,237,0.13);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .4s,color .4s;}
+
+    /* SIDEBAR */
+    .sidebar{position:fixed;top:0;left:-280px;width:var(--sidebar-w);height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:1000;display:flex;flex-direction:column;padding:28px 0 24px;transition:left .38s cubic-bezier(.77,0,.175,1);backdrop-filter:blur(18px);}
+    .sidebar.open{left:0;box-shadow:4px 0 40px rgba(0,0,0,0.45);}
+    .sidebar-logo{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:900;color:var(--accent);letter-spacing:2px;padding:0 28px 28px;border-bottom:1px solid var(--border);text-shadow:0 0 18px rgba(99,179,237,0.5);}
+    .sidebar-logo span{color:var(--accent2);}
+    .sidebar-nav{flex:1;padding:24px 16px;display:flex;flex-direction:column;gap:6px;}
+    .nav-tab{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;cursor:pointer;text-decoration:none;color:var(--muted);font-weight:600;font-size:.95rem;transition:all .22s ease;position:relative;overflow:hidden;}
+    .nav-tab::before{content:'';position:absolute;inset:0;background:var(--accent);opacity:0;border-radius:10px;transition:opacity .22s;}
+    .nav-tab:hover,.nav-tab.active{color:var(--text);}
+    .nav-tab:hover::before{opacity:.07;}
+    .nav-tab.active::before{opacity:.12;}
+    .nav-tab.active{color:var(--accent);}
+    .nav-tab svg{width:20px;height:20px;flex-shrink:0;position:relative;z-index:1;}
+    .nav-tab span{position:relative;z-index:1;}
+    .sidebar-footer{padding:18px 28px 0;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;opacity:0;pointer-events:none;transition:opacity .35s ease;backdrop-filter:blur(2px);}
+    .overlay.show{opacity:1;pointer-events:all;}
+
+    /* TOPBAR */
+    .topbar{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:900;background:rgba(8,9,13,0.82);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);transition:background .4s;}
+    [data-theme="light"] .topbar{background:rgba(240,244,255,0.88);}
+    .hamburger{width:38px;height:38px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:border-color .2s;}
+    .hamburger:hover{border-color:var(--accent);}
+    .hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;transition:all .3s ease;}
+    .hamburger.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+    .hamburger.active span:nth-child(2){opacity:0;transform:scaleX(0);}
+    .hamburger.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+    .topbar-title{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;color:var(--accent);letter-spacing:2px;text-shadow:0 0 14px rgba(99,179,237,0.4);}
+    .theme-toggle{width:38px;height:38px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text);font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .theme-toggle:hover{border-color:var(--accent);background:rgba(99,179,237,0.07);}
+
+    /* PAGE CONTENT */
+    .main{padding-top:60px;min-height:100vh;}
+    .page-header{padding:60px 24px 32px;text-align:center;}
+    .page-badge{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.25);border-radius:20px;padding:6px 16px;letter-spacing:2px;display:inline-block;margin-bottom:20px;animation:fadeUp .7s ease both;}
+    .page-title{font-family:'Orbitron',monospace;font-size:clamp(2rem,5vw,3.4rem);font-weight:900;animation:fadeUp .7s .1s ease both;}
+    .page-title span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .page-desc{max-width:580px;margin:18px auto 0;color:var(--muted);line-height:1.8;font-size:.98rem;animation:fadeUp .7s .2s ease both;}
+
+    /* GRID */
+    .scripts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:22px;padding:20px 28px 60px;max-width:1200px;margin:0 auto;}
+    .script-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s,border-color .25s;animation:fadeUp .5s ease both;}
+    .script-card:hover{transform:translateY(-6px);box-shadow:var(--glow),0 12px 40px rgba(0,0,0,0.3);border-color:rgba(99,179,237,0.3);}
+    .card-img{width:100%;height:170px;object-fit:cover;background:linear-gradient(135deg,#1a2040,#0f1117);display:flex;align-items:center;justify-content:center;}
+    .card-img img{width:100%;height:100%;object-fit:cover;}
+    .card-img-placeholder{font-family:'Orbitron',monospace;font-size:2rem;color:rgba(99,179,237,0.25);}
+    .card-body{padding:18px;}
+    .card-title{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.3;}
+    .card-desc{font-size:.82rem;color:var(--muted);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .card-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--accent);background:rgba(99,179,237,0.1);border-radius:6px;padding:3px 9px;margin-top:10px;letter-spacing:1px;}
+
+    /* EMPTY STATE */
+    .empty-state{text-align:center;padding:80px 24px;color:var(--muted);}
+    .empty-state svg{width:56px;height:56px;margin-bottom:18px;opacity:.3;}
+    .empty-state p{font-size:1rem;}
+
+    /* MODAL */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);}
+    .modal-bg.show{opacity:1;pointer-events:all;}
+    .modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;transform:scale(.94) translateY(20px);transition:transform .3s ease;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+    .modal-bg.show .modal{transform:scale(1) translateY(0);}
+    .modal-img{width:100%;height:200px;object-fit:cover;border-radius:20px 20px 0 0;}
+    .modal-img-placeholder{width:100%;height:200px;background:linear-gradient(135deg,#1a2040,#0f1117);border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:2.5rem;color:rgba(99,179,237,0.2);}
+    .modal-body{padding:28px;}
+    .modal-close{float:right;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:6px 12px;font-size:.85rem;transition:all .2s;}
+    .modal-close:hover{border-color:var(--accent);color:var(--text);}
+    .modal-title{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;margin-bottom:16px;clear:both;}
+    .modal-desc{color:var(--muted);line-height:1.8;font-size:.95rem;margin-bottom:28px;white-space:pre-wrap;}
+    .script-box-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);letter-spacing:2px;margin-bottom:8px;}
+    .script-box-wrap{position:relative;}
+    .script-box{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 50px 14px 16px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text);resize:none;height:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;outline:none;cursor:default;}
+    .copy-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:.72rem;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all .2s;}
+    .copy-btn:hover{background:var(--accent2);}
+    .copy-btn.copied{background:#22c55e;}
+
+    /* LOADING */
+    .loading{text-align:center;padding:80px 24px;color:var(--muted);}
+    .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 18px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+    footer{text-align:center;padding:28px 24px;border-top:1px solid var(--border);color:var(--muted);font-size:.8rem;font-family:'JetBrains Mono',monospace;background:var(--bg2);}
+    footer span{color:var(--accent);}
+  </style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">FAHZ<span>-SCRIPT</span></div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.75L12 3l9 6.75V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.75z"/><path d="M9 22V12h6v10"/></svg>
+      <span>Main</span>
+    </a>
+    <a href="kumpulan.html" class="nav-tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Script</span>
+    </a>
+    <a href="buy.html" class="nav-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span>Shop</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">© 2026 BRC7 Company</div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+  <div class="topbar-title">FAHZ-SCRIPT</div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">☀️</span></button>
+</header>
+
+<main class="main">
+  <div class="page-header">
+    <div class="page-badge">// SCRIPT LIBRARY</div>
+    <h1 class="page-title">Our <span>Collection</span></h1>
+    <p class="page-desc">Temukan berbagai script Roblox berkualitas tinggi yang dikurasi langsung oleh FahzDev. Semua script telah diuji dan siap pakai — gratis untuk komunitas.</p>
+  </div>
+
+  <div id="scriptsContainer">
+    <div class="loading"><div class="spinner"></div>Memuat script...</div>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModalBg(event)">
+  <div class="modal" id="modal">
+    <div id="modalImgWrap"></div>
+    <div class="modal-body">
+      <button class="modal-close" onclick="closeModal()">✕ Tutup</button>
+      <h2 class="modal-title" id="modalTitle"></h2>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="script-box-label">SCRIPT</div>
+      <div class="script-box-wrap">
+        <input class="script-box" id="modalScript" readonly/>
+        <button class="copy-btn" id="copyBtn" onclick="copyScript()">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Script Collection By <span>BRC7 Company</span> | Fahz. All Rights Reserved 2026</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyAgvMarhb2H4nY0YORrtSUtwSjP9mN9aJk",
+    authDomain:"realbro-f988a.firebaseapp.com",
+    databaseURL:"https://realbro-f988a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:"realbro-f988a",
+    storageBucket:"realbro-f988a.firebasestorage.app",
+    messagingSenderId:"302026488099",
+    appId:"1:302026488099:web:d880c86ca7d132bc23f496",
+    measurementId:"G-FB0D4SF8H2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  onValue(ref(db, 'scripts'), snap => {
+    const container = document.getElementById('scriptsContainer');
+    if (!snap.exists()) {
+      container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>Belum ada script. Cek lagi nanti!</p></div>`;
+      return;
+    }
+
+    const scripts = [];
+    snap.forEach(child => scripts.push({ id: child.key, ...child.val() }));
+    scripts.reverse();
+
+    container.innerHTML = `<div class="scripts-grid">${scripts.map((s, i) => `
+      <div class="script-card" style="animation-delay:${i * 0.07}s" onclick='openModal(${JSON.stringify(s)})'>
+        <div class="card-img">${s.imageUrl
+          ? `<img src="${s.imageUrl}" alt="${s.title}" onerror="this.parentElement.innerHTML='<div class=card-img-placeholder>⌨</div>'">`
+          : '<div class="card-img-placeholder">⌨</div>'}</div>
+        <div class="card-body">
+          <div class="card-title">${s.title}</div>
+          <div class="card-desc">${s.desc}</div>
+          <span class="card-tag">LuaU Script</span>
+        </div>
+      </div>`).join('')}</div>`;
+  });
+
+  window.openModal = function(s) {
+    document.getElementById('modalTitle').textContent = s.title;
+    document.getElementById('modalDesc').textContent = s.desc;
+    document.getElementById('modalScript').value = s.script || '';
+    const imgWrap = document.getElementById('modalImgWrap');
+    imgWrap.innerHTML = s.imageUrl
+      ? `<img class="modal-img" src="${s.imageUrl}" alt="${s.title}" onerror="this.outerHTML='<div class=modal-img-placeholder>⌨</div>'">`
+      : `<div class="modal-img-placeholder">⌨</div>`;
+    document.getElementById('modalBg').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('copyBtn').textContent = 'Copy';
+    document.getElementById('copyBtn').className = 'copy-btn';
+  };
+</script>
+
+<script>
+  function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('hamburger').classList.toggle('active');document.getElementById('overlay').classList.toggle('show');}
+  function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('hamburger').classList.remove('active');document.getElementById('overlay').classList.remove('show');}
+  function toggleTheme(){const h=document.documentElement;const d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');document.getElementById('themeIcon').textContent=d?'🌙':'☀️';localStorage.setItem('theme',d?'light':'dark');}
+  (function(){const s=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',s);document.getElementById('themeIcon').textContent=s==='dark'?'☀️':'🌙';})();
+
+  function closeModal(){document.getElementById('modalBg').classList.remove('show');document.body.style.overflow='';}
+  function closeModalBg(e){if(e.target===document.getElementById('modalBg'))closeModal();}
+  function copyScript(){
+    const v=document.getElementById('modalScript').value;
+    navigator.clipboard.writeText(v).then(()=>{
+      const btn=document.getElementById('copyBtn');
+      btn.textContent='✓ Disalin!';btn.className='copy-btn copied';
+      setTimeout(()=>{btn.textContent='Copy';btn.className='copy-btn';},2200);
+    });
+  }
+</script>
+</body>
+</html>
